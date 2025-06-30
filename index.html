@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ניהול פרויקט</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              // New Warm, Neutral Palette
+              'primary': '#000000',       // Charcoal Brown (Text, Prominent BG)
+              'secondary': '#5c554e',     // Also Charcoal Brown for headings
+              'dimmed': '#000000',        // Dimmed text
+              'accent': '#14213d',       // Deep Beige (Accent)
+              'accent-hover': '#14213d',  // Darker Accent
+              'light': '#f5ebe0',       // Almond Cream (Main BG)
+              'medium': '#edede9',       // Light Stone (Panel/Card BG)
+              'dark': '#14213d',         // Warm Gray (Borders)
+
+              // System Messages
+              'success': '#588157',
+              'danger': '#c97d6d',
+              'warning': '#dda15e',
+              'info': '#000000', // Re-using accent
+            },
+          },
+        },
+      };
+    </script>
+  <script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.1.0/",
+    "react": "https://esm.sh/react@^19.1.0",
+    "react-dom/": "https://esm.sh/react-dom@^19.1.0/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.7.0",
+    "jspdf": "https://esm.sh/jspdf@^2.5.1",
+    "jspdf-autotable": "https://esm.sh/jspdf-autotable@^3.8.2",
+    "html2canvas": "https://esm.sh/html2canvas@^1.4.1"
+  }
+}
+</script>
+<link rel="stylesheet" href="/index.css">
+</head>
+  <body class="bg-light text-primary">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+  </body>
+</html>
