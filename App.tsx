@@ -25,7 +25,7 @@ const App: React.FC = () => {
   // Auth & UI state
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true); // Start as true to check for session
   
   const [activeTab, setActiveTab] = useState<Tab>('Portfolio');
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -35,6 +35,37 @@ const App: React.FC = () => {
   const [showOnboardingModal, setShowOnboardingModal] = useState(false);
   const [legalViewContent, setLegalViewContent] = useState<{ title: string; content: string } | null>(null);
   
+  // Effect to check for an existing token on app load
+  useEffect(() => {
+    const checkAuthStatus = async () => {
+      const token = api.getToken();
+      if (token) {
+        try {
+          const data = await api.getInitialData();
+          setUsers(data.users);
+          setTeams(data.teams);
+          setProjects(data.projects);
+          setTasks(data.tasks);
+          setFinancials(data.financials);
+          setOrganizationSettings(data.organizationSettings);
+
+          const loggedInUser = data.users.find(u => u.id === api.getUserIdFromToken());
+          if (loggedInUser) {
+              setCurrentUser(loggedInUser);
+              setIsAuthenticated(true);
+          } else {
+              api.clearToken();
+          }
+        } catch (error) {
+          console.error("Session restore failed:", error);
+          api.clearToken();
+        }
+      }
+      setIsLoading(false);
+    };
+    checkAuthStatus();
+  }, []);
+
   const projectsForCurrentUser = useMemo(() => {
     if (!currentUser) return [];
     if (currentUser.role === 'Super Admin') return projects;
@@ -130,7 +161,7 @@ const App: React.FC = () => {
     if (!originalTask) return;
 
     try {
-        const returnedTask = await api.updateTask(updatedTask, currentUser);
+        const returnedTask = await api.updateTask(updatedTask);
         setTasks(prevTasks =>
           prevTasks.map(task => (task.id === returnedTask.id ? returnedTask : task))
         );
@@ -180,7 +211,7 @@ const App: React.FC = () => {
   const handleBulkUpdateTasks = useCallback(async (updatedTasks: Task[], originalTasksMap: Map<string, Task>) => {
     if (!currentUser) return;
     try {
-        const returnedTasks = await api.bulkUpdateTasks(updatedTasks, currentUser);
+        const returnedTasks = await api.bulkUpdateTasks(updatedTasks);
         const updatedTaskMap = new Map(returnedTasks.map(t => [t.id, t]));
         
         setTasks(prevTasks => 
@@ -215,8 +246,22 @@ const App: React.FC = () => {
 
   const handleAddTask = useCallback(async (taskData: Omit<Task, 'id' | 'columnId' | 'comments' | 'plannedCost' | 'actualCost' | 'dependencies' | 'isMilestone'>) => {
     if (!currentUser) return;
+
+    const fullTaskData: Omit<Task, 'id'> = {
+        ...taskData,
+        columnId: 'col-not-started',
+        comments: [],
+        plannedCost: 0,
+        actualCost: 0,
+        dependencies: [],
+        isMilestone: false,
+        baselineStartDate: undefined,
+        baselineEndDate: undefined,
+        parentId: undefined,
+    };
+
     try {
-        const newTask = await api.addTask(taskData, currentUser);
+        const newTask = await api.addTask(fullTaskData);
         setTasks(prev => [...prev, newTask]);
         
         const newNotifications = taskData.assigneeIds.map(userId => ({
@@ -237,7 +282,7 @@ const App: React.FC = () => {
   const handleAddComment = useCallback(async (taskId: string, comment: Comment) => {
     if (!currentUser) return;
     try {
-        const updatedTask = await api.addComment(taskId, comment, currentUser);
+        const updatedTask = await api.addComment(taskId, comment);
         setTasks(prevTasks =>
             prevTasks.map(t => (t.id === taskId ? updatedTask : t))
         );
@@ -273,7 +318,7 @@ const App: React.FC = () => {
 const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<FinancialTransaction, 'id'>) => {
     if (!currentUser) return;
     try {
-        const newTransaction = await api.addFinancialTransaction(transactionData, currentUser);
+        const newTransaction = await api.addFinancialTransaction(transactionData);
         setFinancials(prev => [newTransaction, ...prev]);
     } catch (error) {
         console.error("Failed to add financial transaction:", error);
@@ -284,7 +329,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleCreateProject = useCallback(async (projectData: Omit<Project, 'id'>) => {
     if (!currentUser) return;
     try {
-        const newProject = await api.createProject(projectData, currentUser);
+        const newProject = await api.createProject(projectData);
         setProjects(prev => [newProject, ...prev]);
     } catch (error) {
         console.error("Failed to create project:", error);
@@ -315,7 +360,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleInviteGuest = useCallback(async (email: string, projectId: string) => {
       if (!currentUser) return;
       try {
-          const newGuest = await api.inviteGuest(email, projectId, currentUser);
+          const newGuest = await api.inviteGuest(email, projectId);
           setUsers(prev => [...prev, newGuest]);
       } catch (error) {
           console.error("Failed to invite guest:", error);
@@ -326,7 +371,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleRevokeGuest = useCallback(async (guestId: string) => {
       if (!currentUser) return;
       try {
-          await api.revokeGuest(guestId, currentUser);
+          await api.revokeGuest(guestId);
           setUsers(prev => prev.filter(u => u.id !== guestId));
       } catch (error) {
           console.error("Failed to revoke guest:", error);
@@ -360,7 +405,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleUpdateUser = useCallback(async (updatedUser: User) => {
       if (!currentUser) return;
       try {
-          const returnedUser = await api.updateUser(updatedUser, currentUser);
+          const returnedUser = await api.updateUser(updatedUser);
           setUsers(prev => prev.map(u => u.id === returnedUser.id ? returnedUser : u));
           if (currentUser && currentUser.id === returnedUser.id) {
               setCurrentUser(returnedUser);
@@ -374,7 +419,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleCreateUser = useCallback(async (newUserData: Omit<User, 'id' | 'avatarUrl'>) => {
       if (!currentUser) return;
       try {
-          const newUser = await api.createUser(newUserData, currentUser);
+          const newUser = await api.createUser(newUserData);
           setUsers(prev => [...prev, newUser]);
           alert(`הזמנה נשלחה אל ${newUser.email}. כעת הם יכולים להגדיר סיסמה ולהתחבר.`);
       } catch(error) {
@@ -386,7 +431,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleDeleteUser = useCallback(async (userId: string) => {
       if (!currentUser) return;
       try {
-          const disabledUser = await api.deleteUser(userId, currentUser);
+          const disabledUser = await api.deleteUser(userId);
           setUsers(prev => prev.map(u => u.id === userId ? disabledUser : u));
       } catch(error) {
           console.error("Failed to delete user:", error);
@@ -397,7 +442,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleUpdateTeam = useCallback(async (updatedTeam: Team, newLeaderId: string | null, newMemberIds: string[]) => {
       if (!currentUser) return;
       try {
-          const { team, updatedUsers } = await api.updateTeam(updatedTeam, newLeaderId, newMemberIds, currentUser);
+          const { team, updatedUsers } = await api.updateTeam(updatedTeam, newLeaderId, newMemberIds);
           setTeams(prev => prev.map(t => t.id === team.id ? team : t));
           const updatedUsersMap = new Map(updatedUsers.map(u => [u.id, u]));
           setUsers(prev => prev.map(u => updatedUsersMap.get(u.id) || u));
@@ -410,7 +455,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleCreateTeam = useCallback(async (newTeamData: Omit<Team, 'id'>, leaderId: string, memberIds: string[]) => {
       if (!currentUser) return;
       try {
-          const { team, updatedUsers } = await api.createTeam(newTeamData, leaderId, memberIds, currentUser);
+          const { team, updatedUsers } = await api.createTeam(newTeamData, leaderId, memberIds);
           setTeams(prev => [...prev, team]);
           const updatedUsersMap = new Map(updatedUsers.map(u => [u.id, u]));
           setUsers(prev => prev.map(u => updatedUsersMap.get(u.id) || u));
@@ -423,7 +468,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleDeleteTeam = useCallback(async (teamId: string) => {
       if (!currentUser) return;
       try {
-          const { updatedUsers } = await api.deleteTeam(teamId, currentUser);
+          const { updatedUsers } = await api.deleteTeam(teamId);
           setTeams(prev => prev.filter(t => t.id !== teamId));
           const updatedUsersMap = new Map(updatedUsers.map(u => [u.id, u]));
           setUsers(prev => prev.map(u => updatedUsersMap.get(u.id) || u));
@@ -436,7 +481,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleAddUsersToTeam = useCallback(async (userIds: string[], teamId: string) => {
       if (!currentUser) return;
       try {
-          const updatedUsers = await api.addUsersToTeam(userIds, teamId, currentUser);
+          const updatedUsers = await api.addUsersToTeam(userIds, teamId);
           const updatedUsersMap = new Map(updatedUsers.map(u => [u.id, u]));
           setUsers(prev => prev.map(u => updatedUsersMap.get(u.id) || u));
       } catch (error) {
@@ -448,7 +493,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   const handleRemoveUserFromTeam = useCallback(async (userId: string) => {
       if (!currentUser) return;
       try {
-          const updatedUser = await api.removeUserFromTeam(userId, currentUser);
+          const updatedUser = await api.removeUserFromTeam(userId);
           setUsers(prev => prev.map(u => u.id === userId ? updatedUser : u));
       } catch (error) {
           console.error("Failed to remove user from team:", error);
@@ -484,7 +529,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
             setProjects(initialData.projects);
             setTasks(initialData.tasks);
             setFinancials(initialData.financials);
-            setOrganizationSettings({ name: 'מנהל פרויקטים חכם', logoUrl: '' }); // This should come from an API endpoint
+            setOrganizationSettings(initialData.organizationSettings);
             
             setIsAuthenticated(true);
             setView('dashboard');
@@ -506,6 +551,7 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
   };
 
   const handleLogout = () => {
+    api.clearToken();
     setCurrentUser(null);
     setIsAuthenticated(false);
     // Clear all data state
@@ -550,20 +596,20 @@ const handleAddFinancialTransaction = useCallback(async (transactionData: Omit<F
     setLegalViewContent(null);
   };
   
-  if (legalViewContent) {
-    return <LegalDocumentView title={legalViewContent.title} content={legalViewContent.content} onBack={handleHideLegalDocument} />;
-  }
-
-  if (!isAuthenticated || !currentUser) {
-    return <LoginView onLogin={handleLogin} onRegister={handleRegistration} onShowLegalDocument={handleShowLegalDocument} />;
-  }
-
   if (isLoading) {
       return (
           <div className="flex items-center justify-center h-screen bg-light">
               <Spinner className="w-12 h-12 text-accent"/>
           </div>
       )
+  }
+
+  if (legalViewContent) {
+    return <LegalDocumentView title={legalViewContent.title} content={legalViewContent.content} onBack={handleHideLegalDocument} />;
+  }
+
+  if (!isAuthenticated || !currentUser) {
+    return <LoginView onLogin={handleLogin} onRegister={handleRegistration} onShowLegalDocument={handleShowLegalDocument} />;
   }
 
   const renderContent = () => {
