@@ -1,4 +1,5 @@
-import express from 'express';
+
+import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 /**
@@ -6,29 +7,29 @@ import jwt from 'jsonwebtoken';
  * It checks for a 'Bearer' token in the Authorization header.
  * If the token is valid, it decodes the payload and attaches it to `req.user`.
  */
-export const protect = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+export const protect = (req: Request, res: Response, next: NextFunction) => {
     let token;
 
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+    if ((req as any).headers.authorization && (req as any).headers.authorization.startsWith('Bearer')) {
         try {
             // Get token from header (e.g., "Bearer <token>")
-            token = req.headers.authorization.split(' ')[1];
+            token = (req as any).headers.authorization.split(' ')[1];
 
             // Verify token
             const decoded = jwt.verify(token, process.env.JWT_SECRET!);
             
             // Attach user to the request object for use in subsequent controllers
-            req.user = decoded as Express.Request['user'];
+            (req as any).user = decoded as Express.Request['user'];
             
             next();
         } catch (error) {
             console.error(error);
-            return res.status(401).json({ message: 'Not authorized, token failed' });
+            return (res as any).status(401).json({ message: 'Not authorized, token failed' });
         }
     }
 
     if (!token) {
-        return res.status(401).json({ message: 'Not authorized, no token provided' });
+        return (res as any).status(401).json({ message: 'Not authorized, no token provided' });
     }
 };
 
@@ -37,9 +38,9 @@ export const protect = (req: express.Request, res: express.Response, next: expre
  * @param roles A list of authorized roles.
  */
 export const authorize = (...roles: string[]) => {
-    return (req: express.Request, res: express.Response, next: express.NextFunction) => {
-        if (!req.user || !roles.includes(req.user.role)) {
-            return res.status(403).json({ message: 'User role not authorized to access this route' });
+    return (req: Request, res: Response, next: NextFunction) => {
+        if (!(req as any).user || !roles.includes((req as any).user.role)) {
+            return (res as any).status(403).json({ message: 'User role not authorized to access this route' });
         }
         next();
     }

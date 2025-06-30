@@ -3,16 +3,7 @@ import { Project, Task, FinancialTransaction, User, Team } from '../types';
 import Icon from './Icon';
 import CreateProjectModal from './CreateProjectModal';
 import { exportPortfolioToPdf } from '../services/exportService';
-
-interface PortfolioViewProps {
-    allProjects: Project[];
-    allTasks: Task[];
-    allFinancials: FinancialTransaction[];
-    allUsers: User[];
-    allTeams: Team[];
-    onCreateProject: (projectData: Omit<Project, 'id'>) => void;
-    onRevokeGuest: (guestId: string) => void;
-}
+import { useAppContext } from './AppContext';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('he-IL', {
@@ -31,7 +22,17 @@ const statusMap: Record<string, Status> = {
     'Completed': 'הושלם'
 };
 
-const PortfolioView: React.FC<PortfolioViewProps> = ({ allProjects, allTasks, allFinancials, allUsers, allTeams, onCreateProject, onRevokeGuest }) => {
+const PortfolioView: React.FC = () => {
+    const { 
+        projects: allProjects, 
+        tasks: allTasks, 
+        financials: allFinancials, 
+        users: allUsers, 
+        teams: allTeams, 
+        handleCreateProject, 
+        handleRevokeGuest 
+    } = useAppContext();
+
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [filterByTeam, setFilterByTeam] = useState('all');
     const [filterByStatus, setFilterByStatus] = useState('all');
@@ -165,7 +166,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ allProjects, allTasks, al
                 <CreateProjectModal 
                     isOpen={isCreateModalOpen}
                     onClose={() => setIsCreateModalOpen(false)}
-                    onSubmit={onCreateProject}
+                    onSubmit={handleCreateProject}
                     teamLeaders={allUsers.filter(u => u.role === 'Team Leader')}
                 />
             )}
@@ -192,7 +193,7 @@ const PortfolioView: React.FC<PortfolioViewProps> = ({ allProjects, allTasks, al
                                         </td>
                                         <td className="px-4 py-4 text-dimmed">{projectName}</td>
                                         <td className="px-4 py-4">
-                                            <button onClick={() => onRevokeGuest(guest.id)} className="text-danger hover:underline text-xs">בטל גישה</button>
+                                            <button onClick={() => handleRevokeGuest(guest.id)} className="text-danger hover:underline text-xs">בטל גישה</button>
                                         </td>
                                     </tr>
                                 );

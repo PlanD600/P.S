@@ -44,7 +44,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, notifications, o
           <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center space-x-2 cursor-pointer p-1 rounded-lg hover:bg-dark/50">
             <img
               src={currentUser.avatarUrl}
-              alt="User Avatar"
+              alt={currentUser.name}
               className="w-10 h-10 rounded-full border-2 border-accent"
             />
             <span className="hidden sm:block text-primary font-medium">{currentUser.name}</span>
@@ -74,7 +74,7 @@ const Header: React.FC<HeaderProps> = ({ currentUser, onLogout, notifications, o
             </div>
           )}
         </div>
-        <button onClick={onGoToSettings} title="הגדרות" className="p-2 rounded-full text-dimmed hover:bg-dark/50 hover:text-accent transition-colors">
+        <button onClick={onGoToSettings} aria-label="הגדרות" title="הגדרות" className="p-2 rounded-full text-dimmed hover:bg-dark/50 hover:text-accent transition-colors">
             <Icon name="settings" className="w-6 h-6" />
         </button>
          <Notifications 

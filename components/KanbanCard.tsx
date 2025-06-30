@@ -21,9 +21,10 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, users, onTaskClick }) => 
   };
 
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onTaskClick(task)}
-      className="bg-medium p-4 rounded-lg shadow-sm hover:shadow-md hover:ring-1 hover:ring-accent cursor-pointer transition-all duration-200 border border-dark/50"
+      className="w-full text-right bg-medium p-4 rounded-lg shadow-sm hover:shadow-md hover:ring-1 hover:ring-accent cursor-pointer transition-all duration-200 border border-dark/50 focus:outline-none focus:ring-2 focus:ring-accent"
     >
       <h3 className="font-semibold text-primary mb-2">{task.title}</h3>
       
@@ -55,7 +56,7 @@ const KanbanCard: React.FC<KanbanCardProps> = ({ task, users, onTaskClick }) => 
           ))}
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 

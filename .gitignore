@@ -1,51 +1,25 @@
-# ===================================================================
-# .gitignore כללי לפרויקט React / Vite / Node.js
-# ===================================================================
-
-# Dependencies
-# התיקייה הכי חשובה להתעלם ממנה. היא מכילה מאות אלפי קבצים
-# שניתן לשחזר בקלות על ידי הרצת "npm install".
-node_modules/
-
-# Build output
-# תיקיות שנוצרות אוטומטית בתהליך הבנייה של הפרויקט.
-dist/
-build/
-.next/
-.svelte-kit/
-
-# Environment variables
-# קבצים אלו מכילים מידע רגיש כמו סיסמאות ומפתחות API.
-# אסור בתכלית האיסור להעלות אותם ל-Git!
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-.env.*.local
-
-# Log files
-# קבצי לוגים שנוצרים בזמן ריצה או בעת התקנת תלויות.
+# Logs
+logs
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+lerna-debug.log*
 
-# IDE/Editor specific files
-# קבצי הגדרות של סביבות פיתוח ועורכי קוד.
-.vscode/
-.idea/
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
-*.swp
-
-# macOS specific files
-# קבצים שמערכת ההפעלה של אפל יוצרת אוטומטית.
-.DS_Store
-
-# Test reports
-# דוחות שנוצרים על ידי כלי בדיקה אוטומטיות.
-coverage/
-.nyc_output/
+*.sw?
+.env

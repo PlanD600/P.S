@@ -4,18 +4,11 @@ import TaskModal from './TaskModal';
 import { exportGanttToPdf } from '../services/exportService';
 import Icon from './Icon';
 import InviteGuestModal from './InviteGuestModal';
+import { useAppContext } from './AppContext';
 
 
 interface TimesViewProps {
   tasks: Task[];
-  onUpdateTask: (updatedTask: Task) => void;
-  onBulkUpdateTasks: (updatedTasks: Task[], originalTasksMap: Map<string, Task>) => void;
-  onAddComment: (taskId: string, comment: Comment) => void;
-  currentUser: User;
-  allUsers: User[];
-  allProjects: Project[];
-  selectedProjectId: string | null;
-  onInviteGuest: (email: string, projectId: string) => void;
 }
 
 interface HierarchicalTask extends Task {
@@ -60,7 +53,18 @@ const buildTaskHierarchy = (tasks: Task[]): HierarchicalTask[] => {
     return flattened;
 };
 
-const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment, currentUser, allUsers, allProjects, onBulkUpdateTasks, selectedProjectId, onInviteGuest }) => {
+const TimesView: React.FC<TimesViewProps> = ({ tasks }) => {
+  const { 
+    currentUser, 
+    users: allUsers, 
+    projects: allProjects, 
+    selectedProjectId,
+    handleUpdateTask, 
+    handleBulkUpdateTasks, 
+    handleAddComment, 
+    handleInviteGuest 
+  } = useAppContext();
+  
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [interaction, setInteraction] = useState<InteractionState | null>(null);
   const [ghostPosition, setGhostPosition] = useState<{ x: number; y: number; width: number } | null>(null);
@@ -136,7 +140,7 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
   }, [hierarchicalTasks, dateToPosition]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>, type: InteractionType, task: HierarchicalTask) => {
-    const isInteractive = currentUser.role === 'Super Admin' || currentUser.role === 'Team Leader';
+    const isInteractive = currentUser?.role === 'Super Admin' || currentUser?.role === 'Team Leader';
     if (!isInteractive) return;
     
     e.stopPropagation();
@@ -155,7 +159,7 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
     if (type !== 'link') {
       setGhostPosition({ x: taskPos.startX, width: taskPos.width, y: taskPos.y });
     }
-  }, [currentUser.role, taskPositions]);
+  }, [currentUser?.role, taskPositions]);
 
   const handleMouseMove = useCallback((e: MouseEvent) => {
     if (!interaction || !ganttRef.current) return;
@@ -280,13 +284,13 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
                 }
             }
         }
-        onBulkUpdateTasks(finalTasksToUpdate, originalTasksMap);
+        handleBulkUpdateTasks(finalTasksToUpdate, originalTasksMap);
     }
 
     setInteraction(null);
     setGhostPosition(null);
     setLinkLinePosition(null);
-  }, [interaction, onBulkUpdateTasks, positionToDate]);
+  }, [interaction, handleBulkUpdateTasks, positionToDate]);
 
   useEffect(() => {
     window.addEventListener('mousemove', handleMouseMove);
@@ -304,6 +308,13 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
       for (let i = 0; i < taskId.length; i++) hash = taskId.charCodeAt(i) + ((hash << 5) - hash);
       return taskColors[Math.abs(hash) % taskColors.length];
   }
+  
+  const handleKeyDown = (e: React.KeyboardEvent, task: Task) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        setSelectedTask(task);
+    }
+  };
 
   const GanttHeader = React.memo(() => {
     const months = [];
@@ -346,7 +357,7 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
                     </div>
                 </div>
                 <div className="w-[300px] border-b border-l border-dark flex items-center justify-between font-semibold text-primary px-4">
-                     <button onClick={() => ganttRef.current && exportGanttToPdf(ganttRef.current!)} className="flex items-center bg-transparent border border-primary text-primary hover:bg-dark/50 font-bold py-1 px-3 rounded-lg transition-colors text-sm">
+                     <button onClick={() => ganttRef.current && exportGanttToPdf(ganttRef.current!)} aria-label="ייצוא תרשים גאנט ל-PDF" className="flex items-center bg-transparent border border-primary text-primary hover:bg-dark/50 font-bold py-1 px-3 rounded-lg transition-colors text-sm">
                         <Icon name="download" className="w-4 h-4 mr-2" />
                         ייצוא
                     </button>
@@ -357,6 +368,8 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
     );
   });
   
+  if (!currentUser) return null;
+
   if (!selectedProjectId) {
       return (
         <div className="flex items-center justify-center h-full bg-medium p-8 rounded-lg">
@@ -438,15 +451,19 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
                         <div key={task.id} data-task-id={task.id} className="absolute flex items-center h-12" style={{ top: index * GANTT_ROW_HEIGHT, right: 0, width: '100%', zIndex: 15 }}>
                              {/* Task Bar */}
                             <div 
-                            className={`absolute h-8 rounded flex items-center px-2 group ${isInteractive ? 'cursor-move' : 'cursor-pointer'} transition-all duration-150 shadow hover:shadow-lg`}
-                            style={{ 
-                                right: 300 + position.startX, 
-                                width: position.width, 
-                                top: (GANTT_ROW_HEIGHT - TASK_BAR_HEIGHT)/2, 
-                                backgroundColor: getTaskColor(task.id) 
-                            }}
-                            onClick={!interaction ? () => setSelectedTask(task) : undefined}
-                            onMouseDown={isInteractive ? (e) => handleMouseDown(e, 'move', task) : undefined}
+                                role="button"
+                                tabIndex={isInteractive ? 0 : -1}
+                                onKeyDown={(e) => handleKeyDown(e, task)}
+                                aria-label={`פתח פרטי משימה: ${task.title}`}
+                                className={`absolute h-8 rounded flex items-center px-2 group ${isInteractive ? 'cursor-move' : 'cursor-pointer'} transition-all duration-150 shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-accent focus:z-20`}
+                                style={{ 
+                                    right: 300 + position.startX, 
+                                    width: position.width, 
+                                    top: (GANTT_ROW_HEIGHT - TASK_BAR_HEIGHT)/2, 
+                                    backgroundColor: getTaskColor(task.id) 
+                                }}
+                                onClick={!interaction ? () => setSelectedTask(task) : undefined}
+                                onMouseDown={isInteractive ? (e) => handleMouseDown(e, 'move', task) : undefined}
                             >
                                 <span className="text-primary text-sm font-medium truncate">{task.title}</span>
                                 <div className="flex -space-x-2 overflow-hidden ml-2">
@@ -485,10 +502,11 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
             {hierarchicalTasks.map(task => {
                  const assignees = allUsers.filter(u => task.assigneeIds.includes(u.id));
                 return (
-                    <div 
+                    <button 
+                        type="button"
                         key={task.id} 
                         onClick={() => setSelectedTask(task)}
-                        className="bg-light p-3 rounded-lg hover:bg-dark/50 cursor-pointer flex items-center justify-between border border-dark/50"
+                        className="w-full text-right bg-light p-3 rounded-lg hover:bg-dark/50 cursor-pointer flex items-center justify-between border border-dark/50 focus:outline-none focus:ring-2 focus:ring-accent"
                         style={{ paddingRight: `${task.depth * 20 + 12}px` }}
                     >
                         <div className="flex items-center space-x-2 space-x-reverse mr-4">
@@ -500,7 +518,7 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
                             <p className="text-primary font-medium truncate">{task.title}</p>
                             <p className="text-dimmed text-xs">{formatDateRange(task.startDate, task.endDate)}</p>
                         </div>
-                    </div>
+                    </button>
                 )
             })}
         </div>
@@ -512,13 +530,14 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
         <div className="flex flex-wrap justify-between items-center gap-4 mb-6">
              <div className="flex items-center space-x-4 space-x-reverse">
                 {canInvite && (
-                    <button onClick={() => setInviteModalOpen(true)} title="הזמן אורח לפרויקט" className="flex items-center space-x-2 space-x-reverse bg-medium hover:bg-dark/50 text-primary hover:text-accent p-2 rounded-lg transition-colors border border-dark">
+                    <button onClick={() => setInviteModalOpen(true)} aria-label="שתף פרויקט" title="הזמן אורח לפרויקט" className="flex items-center space-x-2 space-x-reverse bg-medium hover:bg-dark/50 text-primary hover:text-accent p-2 rounded-lg transition-colors border border-dark">
                         <Icon name="share-alt" className="w-5 h-5" />
                         <span className="text-sm font-semibold hidden sm:inline">שתף</span>
                     </button>
                 )}
                  <button 
                     onClick={() => setViewMode(v => v === 'gantt' ? 'list' : 'gantt')} 
+                    aria-label="החלף תצוגה"
                     title="החלף תצוגה" 
                     className="flex items-center space-x-2 space-x-reverse bg-medium hover:bg-dark/50 text-primary hover:text-accent p-2 rounded-lg transition-colors border border-dark"
                 >
@@ -536,8 +555,8 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
             key={selectedTask.id}
             task={selectedTask}
             onClose={() => setSelectedTask(null)}
-            onUpdateTask={onUpdateTask}
-            onAddComment={onAddComment}
+            onUpdateTask={handleUpdateTask}
+            onAddComment={handleAddComment}
             currentUser={currentUser}
             users={allUsers}
             allProjects={allProjects}
@@ -547,7 +566,7 @@ const TimesView: React.FC<TimesViewProps> = ({ tasks, onUpdateTask, onAddComment
             <InviteGuestModal
                 isOpen={isInviteModalOpen}
                 onClose={() => setInviteModalOpen(false)}
-                onInvite={(email) => onInviteGuest(email, selectedProjectId)}
+                onInvite={(email) => handleInviteGuest(email, selectedProjectId)}
             />
         )}
     </>

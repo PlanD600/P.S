@@ -12,10 +12,13 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ user, onClose, onGoTo
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4">
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="onboarding-title"
         className="bg-medium rounded-lg shadow-2xl w-full max-w-lg text-right relative border border-dark"
         onClick={e => e.stopPropagation()}
       >
-        <button onClick={onClose} className="absolute top-3 left-3 text-dimmed hover:text-primary p-1">
+        <button onClick={onClose} aria-label="סגור חלון" className="absolute top-3 left-3 text-dimmed hover:text-primary p-1">
             <Icon name="close" className="w-6 h-6" />
         </button>
         
@@ -23,7 +26,7 @@ const OnboardingModal: React.FC<OnboardingModalProps> = ({ user, onClose, onGoTo
             <div className="inline-block bg-accent rounded-lg p-3 mb-4">
                 <Icon name="sparkles" className="w-8 h-8 text-primary"/>
             </div>
-            <h2 className="text-2xl font-bold text-primary mb-2">
+            <h2 id="onboarding-title" className="text-2xl font-bold text-primary mb-2">
                 ברוך הבא, {user.name}!
             </h2>
             <p className="text-dimmed mb-6">

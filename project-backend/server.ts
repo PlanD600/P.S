@@ -1,6 +1,7 @@
-import express from 'express';
+import express, { Application, Request, Response, NextFunction } from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
+import { errorHandler } from './src/middleware/error.middleware';
 
 // Import routes
 import authRoutes from './src/api/auth/auth.routes';
@@ -15,7 +16,7 @@ import bootstrapRoutes from './src/api/bootstrap/bootstrap.routes';
 // Load environment variables from .env file
 dotenv.config();
 
-const app: express.Express = express();
+const app: Application = express();
 const port = process.env.PORT || 8080;
 
 // Middleware
@@ -33,10 +34,9 @@ app.use('/api/bootstrap', bootstrapRoutes);
 
 
 // A simple health check endpoint
-app.get('/api', (req: express.Request, res: express.Response) => {
+app.get('/api', (req: Request, res: Response) => {
   res.send('Smart Project Manager API is running!');
 });
 
-app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
-});
+// Central Error Handler
+app.use(errorHandler);

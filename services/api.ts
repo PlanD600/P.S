@@ -114,14 +114,10 @@ export const api = {
     },
 
     addComment: async(taskId: string, comment: Comment): Promise<Task> => {
-        await apiFetch(`/tasks/${taskId}/comments`, {
+        return apiFetch(`/tasks/${taskId}/comments`, {
             method: 'POST',
-            body: JSON.stringify({ content: comment.text, parent_id: comment.parentId })
+            body: JSON.stringify({ content: comment.text, parentId: comment.parentId })
         });
-        // The backend doesn't return the updated task, so we optimistically update on the frontend for now
-        // A better backend would return the full updated task object here.
-        const tempUpdatedTask = await apiFetch(`/tasks/${taskId}`); // Refetch task to get comments
-        return tempUpdatedTask;
     },
     
     // --- Financials ---
@@ -200,10 +196,7 @@ export const api = {
         });
     },
 
-    removeUserFromTeam: async (userId: string): Promise<User> => {
-        const team = (await apiFetch('/teams')).find((t: Team) => t.id === 'find-user-team-id'); // Bit of a hack to find teamId
-        const user = (await apiFetch(`/users/${userId}`)) as User;
-        if (!user.teamId) throw new Error("User not in a team");
-        return apiFetch(`/teams/${user.teamId}/members/${userId}`, { method: 'DELETE' });
+    removeUserFromTeam: async (userId: string, teamId: string): Promise<User> => {
+        return apiFetch(`/teams/${teamId}/members/${userId}`, { method: 'DELETE' });
     },
 };

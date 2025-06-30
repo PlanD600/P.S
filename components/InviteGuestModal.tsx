@@ -22,12 +22,18 @@ const InviteGuestModal: React.FC<InviteGuestModalProps> = ({ isOpen, onClose, on
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4" onClick={onClose}>
-            <form className="bg-medium rounded-lg shadow-2xl w-full max-w-md text-right border border-dark" onClick={e => e.stopPropagation()} onSubmit={handleSubmit}>
+            <form 
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="invite-guest-title"
+                className="bg-medium rounded-lg shadow-2xl w-full max-w-md text-right border border-dark" 
+                onClick={e => e.stopPropagation()} 
+                onSubmit={handleSubmit}>
                 <header className="p-4 border-b border-dark flex justify-between items-center">
-                     <button type="button" onClick={onClose} className="text-dimmed hover:text-primary">
+                     <button type="button" onClick={onClose} aria-label="סגור חלון" className="text-dimmed hover:text-primary">
                         <Icon name="close" className="w-6 h-6" />
                     </button>
-                    <h2 className="text-xl font-bold text-primary">הזמנת אורח</h2>
+                    <h2 id="invite-guest-title" className="text-xl font-bold text-primary">הזמנת אורח</h2>
                 </header>
                 <div className="p-6 space-y-4">
                     <p className="text-sm text-dimmed">

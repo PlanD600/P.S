@@ -1,4 +1,4 @@
-import express from 'express';
+import { Request, Response, NextFunction } from 'express';
 import db from '../../db';
 
 /**
@@ -6,29 +6,27 @@ import db from '../../db';
  * @route   POST /api/finances/entries
  * @access  Private/Super Admin or Team Leader
  */
-export const addFinancialEntry = async (req: express.Request, res: express.Response) => {
-    const { type, amount, description, entry_date, project_id, source } = req.body;
-    const user = req.user;
+export const addFinancialEntry = async (req: Request, res: Response, next: NextFunction) => {
+    const { type, amount, description, date, projectId, source } = (req as any).body;
+    const user = (req as any).user;
 
-    if (!type || !amount || !entry_date || !project_id || !source) {
-        return res.status(400).json({ message: 'Missing required financial data.' });
+    if (!type || !amount || !date || !projectId || !source) {
+        return (res as any).status(400).json({ message: 'Missing required financial data.' });
     }
 
-    // Authorization logic from specification
     if (type === 'Income' && user?.role !== 'Super Admin') {
-        return res.status(403).json({ message: 'Not authorized to add income entries.' });
+        return (res as any).status(403).json({ message: 'Not authorized to add income entries.' });
     }
 
     try {
         const query = `
             INSERT INTO financial_entries (entry_type, amount, description, entry_date, project_id, source)
-            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *;
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *, entry_id as id, entry_type as type, entry_date as date, project_id as "projectId";
         `;
-        const result = await db.query(query, [type, amount, description, entry_date, project_id, source]);
-        res.status(201).json(result.rows[0]);
+        const result = await db.query(query, [type, amount, description, date, projectId, source]);
+        (res as any).status(201).json(result.rows[0]);
     } catch (error) {
-        console.error('Error adding financial entry:', error);
-        res.status(500).json({ message: 'Server error adding financial entry' });
+        next(error);
     }
 };
 
@@ -37,35 +35,33 @@ export const addFinancialEntry = async (req: express.Request, res: express.Respo
  * @route   GET /api/finances/summary
  * @access  Private/Super Admin or Team Leader
  */
-export const getFinancialSummary = async (req: express.Request, res: express.Response) => {
-    const user = req.user;
-    const { team_id } = req.query; // For admin filtering
+export const getFinancialSummary = async (req: Request, res: Response, next: NextFunction) => {
+    const user = (req as any).user;
+    const { team_id } = (req as any).query;
 
     try {
         if (user?.role === 'Super Admin') {
             const query = `
                 SELECT 
-                    SUM(CASE WHEN entry_type = 'income' THEN amount ELSE 0 END) as total_income,
-                    SUM(CASE WHEN entry_type = 'expense' THEN amount ELSE 0 END) as total_expense
+                    SUM(CASE WHEN entry_type = 'Income' THEN amount ELSE 0 END) as total_income,
+                    SUM(CASE WHEN entry_type = 'Expense' THEN amount ELSE 0 END) as total_expense
                 FROM financial_entries fe
-                JOIN projects p ON fe.project_id = p.project_id
-                ${team_id ? 'WHERE p.team_id = $1' : ''};
+                ${team_id ? 'JOIN projects p ON fe.project_id = p.project_id WHERE p.team_id = $1' : ''};
             `;
             const result = await db.query(query, team_id ? [team_id as string] : []);
-            res.json(result.rows[0]);
+            (res as any).json(result.rows[0]);
         } else if (user?.role === 'Team Leader') {
             const query = `
                 SELECT 
                     SUM(amount) as total_team_expenses
                 FROM financial_entries fe
                 JOIN projects p ON fe.project_id = p.project_id
-                WHERE p.team_id = $1 AND fe.entry_type = 'expense';
+                WHERE p.team_id = $1 AND fe.entry_type = 'Expense';
             `;
             const result = await db.query(query, [user.teamId]);
-            res.json(result.rows[0]);
+            (res as any).json(result.rows[0]);
         }
     } catch (error) {
-        console.error('Error getting financial summary:', error);
-        res.status(500).json({ message: 'Server error getting financial summary' });
+        next(error);
     }
 };

@@ -44,13 +44,17 @@ const TabBar: React.FC<TabBarProps> = ({ activeTab, setActiveTab, currentUser })
     }
 
   return (
-    <nav className="bg-light px-4 sm:px-6 lg:px-8 border-b border-dark">
-      <div className="flex space-x-4 space-x-reverse">
+    <nav aria-label="ניווט ראשי">
+      <div role="tablist" className="bg-light px-4 sm:px-6 lg:px-8 border-b border-dark flex space-x-4 space-x-reverse">
         {availableTabs.map((tab) => (
           <button
             key={tab.name}
+            id={`tab-${tab.name}`}
+            role="tab"
+            aria-selected={activeTab === tab.name}
+            aria-controls={`tabpanel-${tab.name}`}
             onClick={() => setActiveTab(tab.name)}
-            className={`flex items-center space-x-2 space-x-reverse px-3 py-3 text-sm font-medium transition-colors border-b-2
+            className={`flex items-center space-x-2 space-x-reverse px-3 py-3 text-sm font-medium transition-colors border-b-2 focus:outline-none focus:ring-2 focus:ring-offset-0 focus:ring-accent
               ${
                 activeTab === tab.name
                   ? 'border-primary text-primary font-semibold'

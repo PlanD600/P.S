@@ -4,16 +4,7 @@ import Icon from './Icon';
 import AddFinancialTransactionModal from './AddFinancialTransactionModal';
 import InviteGuestModal from './InviteGuestModal';
 import { exportFinancesToCsv } from '../services/exportService';
-
-interface FinancesViewProps {
-  currentUser: User;
-  teams: Team[];
-  projects: Project[];
-  allFinancials: FinancialTransaction[];
-  onAddTransaction: (transaction: Omit<FinancialTransaction, 'id'>) => void;
-  selectedProjectId: string | null;
-  onInviteGuest: (email: string, projectId: string) => void;
-}
+import { useAppContext } from './AppContext';
 
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat('he-IL', {
@@ -24,7 +15,8 @@ const formatCurrency = (amount: number) => {
   }).format(amount);
 };
 
-const SuperAdminView: React.FC<Omit<FinancesViewProps, 'currentUser' | 'selectedProjectId' | 'onInviteGuest'>> = ({ teams, projects, allFinancials, onAddTransaction }) => {
+const SuperAdminView: React.FC = () => {
+    const { teams, projects, financials: allFinancials, handleAddFinancialTransaction } = useAppContext();
     const [viewByTeam, setViewByTeam] = useState('all');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [modalType, setModalType] = useState<'Income' | 'Expense' | null>(null);
@@ -99,7 +91,7 @@ const SuperAdminView: React.FC<Omit<FinancesViewProps, 'currentUser' | 'selected
                 <AddFinancialTransactionModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    onSubmit={onAddTransaction}
+                    onSubmit={handleAddFinancialTransaction}
                     type={modalType}
                     currentUserRole='Super Admin'
                     projects={projects}
@@ -109,9 +101,12 @@ const SuperAdminView: React.FC<Omit<FinancesViewProps, 'currentUser' | 'selected
     );
 };
 
-const TeamLeaderView: React.FC<FinancesViewProps> = ({ currentUser, teams, projects, allFinancials, onAddTransaction, selectedProjectId, onInviteGuest }) => {
+const TeamLeaderView: React.FC = () => {
+    const { currentUser, projects, financials: allFinancials, selectedProjectId, handleInviteGuest, handleAddFinancialTransaction } = useAppContext();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isInviteModalOpen, setInviteModalOpen] = useState(false);
+
+    if (!currentUser) return null;
 
     const teamProjects = useMemo(() => projects.filter(p => p.teamId === currentUser.teamId), [projects, currentUser.teamId]);
     const project = projects.find(p => p.id === selectedProjectId);
@@ -168,7 +163,7 @@ const TeamLeaderView: React.FC<FinancesViewProps> = ({ currentUser, teams, proje
                  <AddFinancialTransactionModal
                     isOpen={isModalOpen}
                     onClose={() => setIsModalOpen(false)}
-                    onSubmit={onAddTransaction}
+                    onSubmit={handleAddFinancialTransaction}
                     type='Expense'
                     currentUserRole='Team Leader'
                     projects={teamProjects}
@@ -178,7 +173,7 @@ const TeamLeaderView: React.FC<FinancesViewProps> = ({ currentUser, teams, proje
                 <InviteGuestModal
                     isOpen={isInviteModalOpen}
                     onClose={() => setInviteModalOpen(false)}
-                    onInvite={(email) => onInviteGuest(email, selectedProjectId)}
+                    onInvite={(email) => handleInviteGuest(email, selectedProjectId)}
                 />
             )}
         </div>
@@ -229,8 +224,10 @@ const TransactionTable: React.FC<{
 );
 
 
-const FinancesView: React.FC<FinancesViewProps> = (props) => {
-    const { currentUser, selectedProjectId } = props;
+const FinancesView: React.FC = () => {
+    const { currentUser, selectedProjectId } = useAppContext();
+
+    if (!currentUser) return null;
 
     if (currentUser.role === 'Team Leader' && !selectedProjectId) {
         return (
@@ -241,11 +238,11 @@ const FinancesView: React.FC<FinancesViewProps> = (props) => {
     }
     
     if (currentUser.role === 'Super Admin') {
-        return <SuperAdminView {...props} />;
+        return <SuperAdminView />;
     }
     
     if (currentUser.role === 'Team Leader') {
-        return <TeamLeaderView {...props} />;
+        return <TeamLeaderView />;
     }
 
     return null;

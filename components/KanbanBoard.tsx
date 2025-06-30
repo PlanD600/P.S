@@ -6,20 +6,24 @@ import TaskModal from './TaskModal';
 import AddTaskModal from './AddTaskModal';
 import Icon from './Icon';
 import InviteGuestModal from './InviteGuestModal';
+import { useAppContext } from './AppContext';
 
 interface KanbanBoardProps {
   tasks: Task[];
-  onUpdateTask: (updatedTask: Task) => void;
-  onAddTask: (taskData: Omit<Task, 'id' | 'columnId' | 'comments' | 'plannedCost' | 'actualCost' | 'dependencies'>) => void;
-  onAddComment: (taskId: string, comment: Comment) => void;
-  currentUser: User;
-  users: User[];
-  selectedProjectId: string | null;
-  allProjects: Project[];
-  onInviteGuest: (email: string, projectId: string) => void;
 }
 
-const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onUpdateTask, onAddTask, onAddComment, currentUser, users, selectedProjectId, allProjects, onInviteGuest }) => {
+const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks }) => {
+  const { 
+    currentUser, 
+    users, 
+    selectedProjectId, 
+    projects: allProjects, 
+    handleUpdateTask, 
+    handleAddTask, 
+    handleAddComment,
+    handleInviteGuest 
+  } = useAppContext();
+
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [isAddTaskModalOpen, setAddTaskModalOpen] = useState(false);
   const [isInviteModalOpen, setInviteModalOpen] = useState(false);
@@ -41,27 +45,21 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onUpdateTask, onAddTas
   }, []);
 
   const handleCreateTask = useCallback((taskData: Pick<Task, 'title' | 'description' | 'assigneeIds' | 'startDate' | 'endDate' | 'projectId'>) => {
-    onAddTask(taskData);
+    handleAddTask(taskData);
     setAddTaskModalOpen(false);
-  }, [onAddTask]);
+  }, [handleAddTask]);
 
   const handleUpdateAndCloseModal = useCallback((updatedTask: Task) => {
-    onUpdateTask(updatedTask);
+    handleUpdateTask(updatedTask);
     if (selectedTask && selectedTask.id === updatedTask.id) {
         setSelectedTask(updatedTask);
     }
-  }, [selectedTask, onUpdateTask]);
+  }, [selectedTask, handleUpdateTask]);
   
-  const handleCommentAndCloseModal = useCallback((taskId: string, comment: Comment) => {
-      onAddComment(taskId, comment);
-       const updatedTask = tasks.find(t => t.id === taskId);
-       if (updatedTask && selectedTask && selectedTask.id === updatedTask.id) {
-           setSelectedTask({...updatedTask, comments: [...updatedTask.comments, comment]});
-       }
-  }, [tasks, selectedTask, onAddComment]);
-
   const project = allProjects.find(p => p.id === selectedProjectId);
-  const canInvite = selectedProjectId && (currentUser.role === 'Super Admin' || currentUser.role === 'Team Leader');
+  const canInvite = selectedProjectId && (currentUser?.role === 'Super Admin' || currentUser?.role === 'Team Leader');
+
+  if (!currentUser) return null;
 
   return (
     <>
@@ -94,7 +92,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onUpdateTask, onAddTas
           task={selectedTask}
           onClose={handleCloseModal}
           onUpdateTask={handleUpdateAndCloseModal}
-          onAddComment={onAddComment}
+          onAddComment={handleAddComment}
           currentUser={currentUser}
           users={users}
           allProjects={allProjects}
@@ -114,7 +112,7 @@ const KanbanBoard: React.FC<KanbanBoardProps> = ({ tasks, onUpdateTask, onAddTas
             <InviteGuestModal
                 isOpen={isInviteModalOpen}
                 onClose={() => setInviteModalOpen(false)}
-                onInvite={(email) => onInviteGuest(email, selectedProjectId)}
+                onInvite={(email) => handleInviteGuest(email, selectedProjectId)}
             />
         )}
     </>

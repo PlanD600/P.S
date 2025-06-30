@@ -39,12 +39,19 @@ const CreateProjectModal: React.FC<CreateProjectModalProps> = ({ isOpen, onClose
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4" onClick={onClose}>
-      <form className="bg-medium rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-dark" onClick={e => e.stopPropagation()} onSubmit={handleSubmit}>
+      <form 
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="create-project-modal-title"
+        className="bg-medium rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col border border-dark" 
+        onClick={e => e.stopPropagation()} 
+        onSubmit={handleSubmit}
+      >
         <header className="p-4 border-b border-dark flex justify-between items-center">
-          <button type="button" onClick={onClose} className="text-dimmed hover:text-primary">
+          <button type="button" onClick={onClose} aria-label="סגור חלון" className="text-dimmed hover:text-primary">
             <Icon name="close" className="w-7 h-7" />
           </button>
-          <h2 className="text-2xl font-bold text-primary">יצירת פרויקט חדש</h2>
+          <h2 id="create-project-modal-title" className="text-2xl font-bold text-primary">יצירת פרויקט חדש</h2>
         </header>
 
         <div className="p-6 flex-grow overflow-y-auto space-y-4">

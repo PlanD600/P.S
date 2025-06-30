@@ -94,15 +94,18 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4" onClick={onClose}>
       <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="registration-modal-title"
         className="bg-medium rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col text-right border border-dark"
         onClick={e => e.stopPropagation()}
         onSubmit={handleSubmit}
       >
         <header className="p-4 border-b border-dark flex justify-between items-center">
-          <button type="button" onClick={onClose} className="text-dimmed hover:text-primary">
+          <button type="button" onClick={onClose} aria-label="סגור חלון" className="text-dimmed hover:text-primary">
             <Icon name="close" className="w-7 h-7" />
           </button>
-          <h2 className="text-2xl font-bold text-primary">יצירת סביבת עבודה חדשה</h2>
+          <h2 id="registration-modal-title" className="text-2xl font-bold text-primary">יצירת סביבת עבודה חדשה</h2>
         </header>
 
         <main className="p-6 flex-grow overflow-y-auto space-y-4">
@@ -132,7 +135,14 @@ const RegistrationModal: React.FC<RegistrationModalProps> = ({ isOpen, onClose, 
             </div>
             <div>
               <label htmlFor="reg-confirm-password" className="font-semibold text-dimmed mb-1 block">אימות סיסמה <span className="text-danger">*</span></label>
-              <input id="reg-confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required className={`w-full bg-light text-primary p-2 rounded-md border border-dark focus:outline-none focus:ring-2 ${password && !passwordsMatch ? 'ring-danger' : 'focus:ring-accent'}`} />
+              <input 
+                id="reg-confirm-password" 
+                type="password" 
+                value={confirmPassword} 
+                onChange={e => setConfirmPassword(e.target.value)} 
+                required 
+                aria-invalid={!!(confirmPassword && !passwordsMatch)}
+                className={`w-full bg-light text-primary p-2 rounded-md border border-dark focus:outline-none focus:ring-2 ${password && confirmPassword && !passwordsMatch ? 'ring-danger' : 'focus:ring-accent'}`} />
             </div>
           </div>
           

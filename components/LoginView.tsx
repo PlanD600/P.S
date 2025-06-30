@@ -5,11 +5,12 @@ import RegistrationModal from './RegistrationModal';
 
 interface LoginViewProps {
     onLogin: (email: string, password: string) => Promise<string | null>;
-    onRegister: (data: { fullName: string; email: string; password: string; companyName: string; }) => Promise<string | null>;
+    onRegister: (data: { fullName: string; email: string; password: string; companyName: string; }) => Promise<{ success: boolean; error: string | null; }>;
     onShowLegalDocument: (title: string, content: string) => void;
+    onRegistrationSuccess: () => void;
 }
 
-const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, onShowLegalDocument }) => {
+const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, onShowLegalDocument, onRegistrationSuccess }) => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState<string | null>(null);
@@ -32,17 +33,17 @@ const LoginView: React.FC<LoginViewProps> = ({ onLogin, onRegister, onShowLegalD
         setIsLoading(false);
     };
     
-    const handleRegister = async (data: { fullName: string; email: string; password: string; companyName: string; }) => {
+    const handleRegister = async (data: { fullName: string; email: string; password: string; companyName: string; }): Promise<string | null> => {
         setIsLoading(true);
-        const registrationError = await onRegister(data);
+        const { success, error: registrationError } = await onRegister(data);
+        setIsLoading(false);
         if (registrationError) {
-            // This error will be displayed inside the modal
-            setIsLoading(false);
             return registrationError;
         }
-        // On success, the modal will close and App will transition.
-        setRegisterModalOpen(false);
-        setIsLoading(false);
+        if (success) {
+            setRegisterModalOpen(false);
+            onRegistrationSuccess();
+        }
         return null;
     };
 

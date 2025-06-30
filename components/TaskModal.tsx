@@ -207,12 +207,19 @@ const TaskModal: React.FC<TaskModalProps> = ({ task, onClose, onUpdateTask, onAd
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4" onClick={onClose}>
-      <div className="bg-medium rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-dark" onClick={e => e.stopPropagation()}>
+      <div 
+        role="dialog" 
+        aria-modal="true"
+        aria-labelledby="task-modal-title"
+        className="bg-medium rounded-lg shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col border border-dark" 
+        onClick={e => e.stopPropagation()}
+      >
         <header className="p-4 border-b border-dark flex justify-between items-center">
-            <button onClick={onClose} className="text-dimmed hover:text-primary mr-4">
+            <button onClick={onClose} aria-label="סגור חלון" className="text-dimmed hover:text-primary mr-4">
                 <Icon name="close" className="w-7 h-7" />
             </button>
             <input
+                id="task-modal-title"
                 type="text"
                 value={task.title}
                 onChange={e => handleUpdateField('title', e.target.value)}
